@@ -261,7 +261,7 @@ with tab2:
             summary = cleandata[selected_descr_var].value_counts()
             percents_summary = cleandata[selected_descr_var].value_counts(normalize=True).mul(100).round(1).astype(str) + '%'
             cat_summary = pd.concat([summary,percents_summary], axis=1, keys=['Counts', 'Proportions'])
-            st.dataframe (cat_summary)
+            st.write (cat_summary)
 
         st.header ("Which of my continuous variables are normally distributed?")
         st.caption("Test conducted using Shapiro-Wilk test for continuous variables only.")
