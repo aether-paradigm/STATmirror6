@@ -81,7 +81,13 @@ with st.sidebar:
    st.header('Data Uploader')
    st.write('To use this website, prepare a .csv OR .xls file.')
 
-   if st.checkbox("Use Example Data", value=True):
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+st.title("File Upload Example")
+
+if st.checkbox("Use Example Data", value=True):
     st.write("Load Completed: Currently working with Example Data")
 
     df = pd.read_csv('Demo_Dataset_For_Clinlab.csv')
@@ -90,22 +96,40 @@ with st.sidebar:
     df['event'] = np.random.choice(['Yes', 'No'], len(df), p=[0.7, 0.3])
     df['health_status'] = np.random.choice(['Healthy', 'At Risk'], len(df), p=[0.6, 0.4])
 
-   else:
-
+else:
     cleaningfile = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xls", "xlsx"])
     
     if cleaningfile is not None:
         filename = cleaningfile.name
         
-        if filename.endswith(".csv"):
-            df = pd.read_csv(cleaningfile)
-        elif filename.endswith((".xls", ".xlsx")):
-            df = pd.read_excel(cleaningfile)
-        else:
-            st.write("Please provide CSV or Excel files only.")
-            st.stop()
+        try:
+            if filename.endswith(".csv"):
+                df = pd.read_csv(cleaningfile)
+            elif filename.endswith((".xls", ".xlsx")):
+                # Read the Excel file to get sheet names
+                excel_file = pd.ExcelFile(cleaningfile, engine='openpyxl' if filename.endswith(".xlsx") else 'xlrd')
+                
+                # Get sheet names
+                sheet_names = excel_file.sheet_names
+                
+                # Let the user select the sheet
+                selected_sheet = st.selectbox("Select a sheet", sheet_names)
+                
+                # Load the selected sheet into a dataframe
+                df = pd.read_excel(cleaningfile, sheet_name=selected_sheet, engine='openpyxl' if filename.endswith(".xlsx") else 'xlrd')
+            else:
+                st.write("Please provide CSV or Excel files only.")
+                st.stop()
+            
+            st.write("File loaded successfully!")
+            st.dataframe(df.head())  # Display the first few rows
+
+        except Exception as e:
+            st.error(f"Error loading file: {e}")
+
     else:
         st.stop()
+
 
    #filter dataframe section
 
