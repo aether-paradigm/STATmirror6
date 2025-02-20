@@ -12,6 +12,7 @@ import seaborn as sns
 import researchpy as rp
 import csv
 import plotly.express as px
+import scikit_posthocs as sp
 import chart_studio.plotly as pxchart
 import numpy as np
 from sklearn import linear_model, metrics
@@ -36,7 +37,6 @@ from scipy.stats import chi2_contingency
 from scipy.stats import chi2
 from scipy.stats import contingency
 from scipy.stats.contingency import relative_risk
-import scikit_posthocs as sp
 import math
 from sigfig import round
 import random
@@ -55,50 +55,55 @@ tab6, tab2, tab3, tab4, tab5 = st.tabs(["Guide","Descriptive and Normality Testi
 
 with tab6:
     
- 
+
 
     # pdf1 = Image.open('C:/Users/carina.t/Dropbox/hello_world/20230810 front page annotations1024_1.png')
     pdf1 = Image.open('images/20230810 front page annotations1024_1.png')
              # Display the image
-    st.image(pdf1, use_column_width=False)
+    st.image(pdf1, use_container_width=False)
     
     # pdf2 = Image.open('C:/Users/carina.t/Dropbox/hello_world/20230810 front page annotations1024_2.png')
     pdf2 = Image.open('images/20230810 front page annotations1024_2.png')
              # Display the image
-    st.image(pdf2, use_column_width=False)
+    st.image(pdf2, use_container_width=False)
 
     # pdf3 = Image.open('C:/Users/carina.t/Dropbox/hello_world/20230810 front page annotations1024_3.png')
     pdf3 = Image.open('images/20230810 front page annotations1024_3.png')
              # Display the image
-    st.image(pdf3, use_column_width=False)
+    st.image(pdf3, use_container_width=False)
+    st.write('For any new functions inclusion, bugs or technical issues, please contact me at carina.t@nus.edu.sg!')
+
+
 
 with st.sidebar:
 
 
    st.header('Data Uploader')
-   st.write('To use this website, prepare a .csv or .xlsx file according to tutorial.')
+   st.write('To use this website, prepare a .csv OR .xls file.')
 
    if st.checkbox("Use Example Data", value=True):
-    st.write ("Load Completed: Currently working with Example Data")
-    
+    st.write("Load Completed: Currently working with Example Data")
+
     df = pd.read_csv('Demo_Dataset_For_Clinlab.csv')
+
+    # Adding Random Data
+    df['event'] = np.random.choice(['Yes', 'No'], len(df), p=[0.7, 0.3])
+    df['health_status'] = np.random.choice(['Healthy', 'At Risk'], len(df), p=[0.6, 0.4])
+
+   else:
+
+    cleaningfile = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xls", "xlsx"])
     
-    df['event']= np.random.choice(['Yes','No'], len(df), p=[.7,.3])
-    df['health_status']= np.random.choice(['Healthy','At Risk'], len(df), p=[.6,.4])
-
-   
-   else: 
-    cleaningfile = st.file_uploader('')
     if cleaningfile is not None:
-        filename=cleaningfile.name
+        filename = cleaningfile.name
         
-        if ".csv" in filename:
+        if filename.endswith(".csv"):
             df = pd.read_csv(cleaningfile)
-        elif ".xls" in filename:    
+        elif filename.endswith((".xls", ".xlsx")):
             df = pd.read_excel(cleaningfile)
-        else: 
-            st.write('Please provide CSV or Excel files only.')
-
+        else:
+            st.write("Please provide CSV or Excel files only.")
+            st.stop()
     else:
         st.stop()
 
@@ -185,7 +190,7 @@ with st.sidebar:
        return df
 
    category_features = []
-   threshold = 5
+   threshold = 10
    for each in df.columns:
        if df[each].nunique() < threshold:
           category_features.append(each)
@@ -214,7 +219,7 @@ with st.sidebar:
 
 with tab2:
 
-        st.header('Histogram and Descriptive Statistics')
+        st.header('Histogram for Continuous Variables')
 
         st.caption ("A histogram helps you to visualise the distribution of your data; change the number of bins to optimise")
 
@@ -248,10 +253,10 @@ with tab2:
             mime="application/octet-stream"
             )
 
+        st.header('Descriptive Statistics for all Variables')
         #descriptive statistics if numeric data:
-        selected_descr_var = st.selectbox('Which Variable would you like to generate Descriptive Statistics for?', cleandata.columns)
-
-        #descriptive statistics if numeric data:
+        selected_descr_var = st.selectbox('Which variable would you like to generate Descriptive Statistics for?', cleandata.columns)
+    
         if is_numeric_dtype(cleandata[selected_descr_var]):
             description = cleandata[selected_descr_var].describe()
             st.write (description)
@@ -293,8 +298,6 @@ with tab2:
 
         st.caption ('When p-value of Shapiro-Wilk test is < 0.05:  \n - This column of data is not normally distributed.  \n - Non-parametric tests are recommended for downstream analysis.  ')
         st.caption ('When p-value of Shapiro-Wilk test is > 0.05: \n - Data has a normal distribution and parametric tests can be used. ')
-
-
 
 
 with tab3:
@@ -485,7 +488,7 @@ with tab5:
    pass
 
    ### Removing rows with NaN - to remove drop NA
-   df_filter_droppedna = df_filter.dropna(axis='rows', how= 'all') #
+   df_filter_droppedna = df_filter.dropna(axis='rows', how= 'any') #
    st.write('NAs are automatically removed here. Number of datapoints retained after removing NAs:', df_filter_droppedna.shape[0], 'of', df_filter.shape[0])
 
    if len(filter) >= 2:
@@ -502,7 +505,7 @@ with tab5:
            elif corrtype == 'spearman':
             df_corr = spearman_calculate_corr(df_filter_droppedna)
            
-           st.dataframe(df_corr)
+           st.table(df_corr)
 
 
            mask = np.zeros_like(df_corr2, dtype = float)
@@ -520,7 +523,7 @@ with tab5:
            elif corrtype == 'spearman':
             df_pval = spearman_calculate_pvalues(df_filter_droppedna)
            
-           st.dataframe(df_pval)
+           st.table(df_pval)
 
        else:
            st.write('Click to start analysis')
@@ -602,7 +605,7 @@ with tab4:
      st.caption("If analysis takes very long to load, try removing the variables selected in the Correlation tab.")
 
      st.header("Unpaired T-Test for Continuous Variables")
-     st.caption ("T-test is parametric. Mann-Whitney U test is non-parametric. Both test the difference between TWO groups. Note that T-test performed does not assume equal population variance.")
+     st.caption ("T-test is parametric. Mann-Whitney U test is non-parametric. Both test the difference between TWO independent groups. Note that T-test performed does not assume equal population variance.")
 
      selected_var = st.selectbox('What is the variable to be tested? Note that this has to be a continuous variable. ', scatters_df._get_numeric_data().columns)
      selected_categorical_var = st.selectbox('What is the variable used to separate the groups? ', scatters_df.select_dtypes(exclude=["number"]).columns )
@@ -643,7 +646,7 @@ with tab4:
 
 
      st.header("Paired T-Test for Continuous Variables")
-     st.caption ("Paired T-Test is parametric. Wilcoxon Signed Rank test is non-parametric. Both test the difference between TWO groups. \n Zero-differences between two pairs for Wilcoxon Rank Sum test would be discarded.")
+     st.caption ("Paired T-Test is parametric. Wilcoxon Signed Rank test is non-parametric. Both test the difference between TWO dependent groups. \n Zero-differences between two pairs for Wilcoxon Rank Sum test would be discarded.")
 
      paired_selected_var = st.selectbox('What is the test group? (eg. Post-Treatment) ', scatters_df._get_numeric_data().columns)
 
@@ -694,7 +697,7 @@ with tab4:
              st.write("You selected: Kruskal-Wallis H-test")
 
          selected_var1 = st.selectbox('What is the variable to be tested? Note that this has to be a continuous variable.', scatters_df._get_numeric_data().columns)
-         selected_categorical_var1 = st.selectbox('What is the group used to separate the variable selected?', scatters_df.select_dtypes(exclude=["number"]).columns)
+         selected_categorical_var1 = st.selectbox('What is the variable used to separate the groups?', scatters_df.select_dtypes(exclude=["number"]).columns)
          pop = list(set(scatters_df[selected_categorical_var1]))
 
          dataframe_filter3 = scatters_df[[selected_var1,selected_categorical_var1]]
@@ -710,7 +713,7 @@ with tab4:
                 
          if len(to_one_way) > 2:
             if anovatype == 'One-way ANOVA':
-
+                #st.write('test1')
                 _, pnorm_one = f_oneway( *to_one_way.values())
                 if pnorm_one < 0.0001:
                     pnorm_one = "<0.0001"
@@ -718,9 +721,7 @@ with tab4:
                 else:
                     pnorm_one = round(pnorm_one,5)
                 st.write(f'One-way Anova p value: {pnorm_one}')
-                
-                
-
+                    
             elif anovatype == 'Kruskal-Wallis H-test':
                  _, pnorm_kw = stats.kruskal( *to_one_way.values())
                  if pnorm_kw < 0.0001:
@@ -735,44 +736,51 @@ with tab4:
          elif len(to_one_way) == 2:
 
             if anovatype == 'One-way ANOVA':
+                #st.write('test1')
                 _, pnorm_one = f_oneway( *to_one_way.values())
                 if pnorm_one < 0.0001:
                     pnorm_one = "<0.0001"
+                    
                 else:
                     pnorm_one = round(pnorm_one,5)
                 st.write(f'T-test p value: {pnorm_one}')
                 st.caption(f'NOTICE: As <{selected_var1}> have less than two groupings when grouped by <{selected_categorical_var1}>, T-test is done instead of ANOVA. ')
 
             elif anovatype == 'Kruskal-Wallis H-test':
-                _, pnorm_kw = stats.kruskal( *to_one_way.values())
+                _, pnorm_kw = stats.mannwhitneyu( *to_one_way.values())
                 if pnorm_kw < 0.0001:
                     pnorm_kw = "<0.0001"
                    
                 else:
                     pnorm_kw = round(pnorm_kw,5)
 
-                st.write(f'Mann Whitney p value: {pnorm_kw}')
-                st.caption('If p-value < 0.05, please filter the grouping variable (using Filter Dataframe on the left) to TWO groups to conduct a set of pairwise comparisons to determine which groups are significantly different from the other. ')
-                st.caption(f'NOTICE: As <{selected_var1}> have less than two groupings when grouped by <{selected_categorical_var1}>, Mann Whitney U Test is done instead of Kruskal-Wallis H-test. ')
+                st.write(f'Mann Whitney U Test p value: {pnorm_kw}')
+                st.caption(f'NOTICE: As <{selected_var1}> have less than two groupings when grouped by <{selected_categorical_var1}>, Mann Whitney U Test is done instead of ANOVA. ')
          else:
             st.write(f'NULL: Selected variable <{selected_var1}> have less than two groupings when grouped by <{selected_categorical_var1}>.')
             #st.write('test4')
 
-         st.caption('If p-value < 0.05, please proceed with post-hoc test to conduct a set of pairwise comparisons to determine which groups are significantly different from the other. ')
-                
+
+         st.write('If p-value < 0.05, please proceed with post-hoc test to determine which groups are significantly different from the other. ')
          if st.checkbox('Would you like to do a Post-hoc Test?'):
              
              if anovatype == 'One-way ANOVA':
-                test100 = sp.posthoc_ttest(dataframe_filter4,val_col = selected_var1, group_col = selected_categorical_var1, p_adjust = 'bonferroni')
+                #test100 = sp.posthoc_ttest(dataframe_filter4,val_col = selected_var1, group_col = selected_categorical_var1, p_adjust = 'bonferroni')
+                test100 = sp.posthoc_tukey(dataframe_filter4,val_col = selected_var1, group_col = selected_categorical_var1)
+                st.write(" ")
+                st.write(" ")
+                st.write("p-values of Post-hoc Tukey's test - with Multiple Test Correction - Bonferroni:")
+             
 
              elif anovatype == 'Kruskal-Wallis H-test':
-                test100 = sp.posthoc_mannwhitney(dataframe_filter4,val_col = selected_var1, group_col = selected_categorical_var1, p_adjust = 'bonferroni')
+                #test100 = sp.posthoc_mannwhitney(dataframe_filter4,val_col = selected_var1, group_col = selected_categorical_var1, p_adjust = 'bonferroni')
+                test100 = sp.posthoc_dunn(dataframe_filter4,val_col = selected_var1, group_col = selected_categorical_var1, p_adjust = 'bonferroni')
+                st.write(" ")
+                st.write(" ")
+                st.write("p-values of Post-hoc Dunn's test - with Multiple Test Correction - Bonferroni:")
 
-             st.write(" ")
-             st.write(" ")
-             st.write("p-values of Post-hoc test - with Multiple Test Correction - Bonferroni:")
+
              st.write(test100)
-
 
          else:
              st.write('Click to start analysis')
@@ -826,7 +834,7 @@ with tab4:
          
          image = Image.open('images/Relative_Risk_Odds_Ratio_Picture.png')
              # Display the image
-         st.image(image, caption='Relative Risk Formula', use_column_width=True)
+         st.image(image, caption='Relative Risk and Odds Ratio Formula', use_column_width=True)
 
          
 
@@ -850,7 +858,7 @@ with tab4:
 
          st.write(" ")
          if independent_var in variables2:
-            selected_pop_case = st.selectbox('Which is the value that represents that event did happened? Eg. Positive for Disease', pop_set2)
+            selected_pop_case = st.selectbox('Which is the value that represents that event did happen? Eg. Positive for Disease', pop_set2)
 
 
             dataframe_filter10 = scatters_df[[independent_var,dependent_var]]
@@ -948,5 +956,3 @@ with tab4:
          st.write(" ")
          
          st.write(f'Odds Ratio: {odds_ratio_result}  \n Confidence Interval (95%):   Low - {low_conf_int_odd}  ; High - {high_conf_int_odd}')
-
-
