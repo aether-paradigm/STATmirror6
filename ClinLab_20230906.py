@@ -78,12 +78,8 @@ with tab6:
 with st.sidebar:
 
 
-   st.header('Data Uploader')
-   st.write('To use this website, prepare a .csv OR .xls file.')
-
-    import streamlit as st
-    import pandas as pd
-    import numpy as np
+    st.header('Data Uploader')
+    st.write('To use this website, prepare a .csv OR .xls file.')
     
     st.title("File Upload Example")
     
@@ -133,43 +129,43 @@ with st.sidebar:
 
    #filter dataframe section
 
-   st.header("Data Filter")
-   st.write(
+    st.header("Data Filter")
+    st.write(
        """Use this data filter if you're only analysing a subgroup; this filter is applied to all tests in the tabs on the right
        """
-   )
-
-   def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    )
+    
+    def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
        modify = st.checkbox("Do you need to filter your data?")
        st.caption ("Leave unchecked to use whole dataset")
-
+    
        if not modify:
            return df
-
+    
        #make a copy for the dataframe so it would not affect the original df
        df = df.copy()
-
-   # Try to convert datetimes into a standard format (datetime, no timezone)
+    
+    # Try to convert datetimes into a standard format (datetime, no timezone)
        for col in df.columns:
-
+    
            if is_object_dtype(df[col]):
                try:
                    df[col] = pd.to_datetime(df[col])
                except Exception:
                    pass
-
+    
            if is_datetime64_any_dtype(df[col]):
                df[col] = df[col].dt.tz_localize(None)
-
-
+    
+    
        modification_container = st.container()
-
+    
        with modification_container:
            to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
-
+    
            for column in to_filter_columns:
                left, right = st.columns((1, 20))
-
+    
                if is_datetime64_any_dtype(df[column]):
                    user_date_input = right.date_input(
                        f"Values for {column}",
@@ -190,7 +186,7 @@ with st.sidebar:
                        default=list(df[column].unique()),
                    )
                    df = df[df[column].isin(user_cat_input)]
-
+    
                elif is_numeric_dtype(df[column]):
                    _min = float(df[column].min())
                    _max = float(df[column].max())
@@ -210,36 +206,36 @@ with st.sidebar:
                    )
                    if user_text_input:
                        df = df[df[column].astype(str).str.contains(user_text_input)]
-
+    
        return df
-
-   category_features = []
-   threshold = 10
-   for each in df.columns:
+    
+    category_features = []
+    threshold = 10
+    for each in df.columns:
        if df[each].nunique() < threshold:
           category_features.append(each)
-
-   for each in category_features:
+    
+    for each in category_features:
        df[each] = df[each].astype('category')
-
-   cleandata = filter_dataframe(df)
-   st.dataframe(cleandata)
-
-   def convert_df(df):
+    
+    cleandata = filter_dataframe(df)
+    st.dataframe(cleandata)
+    
+    def convert_df(df):
        # IMPORTANT: Cache the conversion to prevent computation on every rerun
        return df.to_csv().encode('utf-8')
-
-   csv = convert_df(cleandata)
-
-   st.download_button(
+    
+    csv = convert_df(cleandata)
+    
+    st.download_button(
        label="Download data as CSV",
        data=csv,
        file_name='filtered_dataframe.csv',
        mime='text/csv',
-   )
-
-
-
+    )
+    
+    
+    
 
 with tab2:
 
